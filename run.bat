@@ -1,0 +1,1 @@
+java -jar target/zigbee-rest-api-0.0.1-SNAPSHOT.jar server configuration.yml
