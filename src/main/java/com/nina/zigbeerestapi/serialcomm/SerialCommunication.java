@@ -55,20 +55,6 @@ public class SerialCommunication{
 		new Thread(new ReadThread()).start();
 	}
 
-	// public String[] listSerialPorts() {
-	//     Enumeration ports = CommPortIdentifier.getPortIdentifiers();
-	//     ArrayList portList = new ArrayList();
-	//     String portArray[] = null;
-	//     while (ports.hasMoreElements()) {
-	//         CommPortIdentifier port = (CommPortIdentifier) ports.nextElement();
-	//         if (port.getPortType() == CommPortIdentifier.PORT_SERIAL) {
-	//             portList.add(port.getName());
-	//         }
-	//     }
-	//     portArray = (String[]) portList.toArray(new String[0]);
-	//     return portArray;
-	// }
-
 	public void writeCommand(String command){
 		try {
 			outStream.write((command + "\r\n").getBytes());
@@ -78,24 +64,6 @@ public class SerialCommunication{
 		}
 	}
 
-	// public void disconnect() {
- //    	if (serialPort != null) {
-	//         try {
-	//             // close the i/o streams.
-	//             outStream.close();
-	//             inStream.close();
-	//         } catch (IOException ex) {
-	//             // don't care
-	//         }
-	//         // Close the port.
-	//         serialPort.close();
- //    	}
-	// }
- 	
- 	// private StringBuilder type;
- 	// private StringBuilder address;
- 	// private StringBuilder value;
- 	// private boolean waitCR;
  	private StringBuilder report = new StringBuilder(	);
  	private boolean waitLF = false;
 
@@ -146,7 +114,8 @@ public class SerialCommunication{
 		try{
 			String type = rep[0];
 
-			if (type.equals("onOff") || type.equals("levelControl")){
+			if (type.equals("onOff") || type.equals("levelControl") 
+					|| type.equals("modelId") || type.equals("stackVersion")){
 				String shortNwkAddr = rep[1];
 				String endpointId = rep[2];
 				String value = rep[3];
@@ -163,6 +132,12 @@ public class SerialCommunication{
 				}
 				else if(type.equals("levelControl")){
 					light.setBrightness(Integer.parseInt(value));
+				}
+				else if(type.equals("modelId")) {
+					light.setModelId(value.equals("0")?"not specified":value);
+				}
+				else if (type.equals("stackVersion")) {
+					light.setStackVersion(value.equals("0")?"not specified":value);
 				}
 			}
 		}

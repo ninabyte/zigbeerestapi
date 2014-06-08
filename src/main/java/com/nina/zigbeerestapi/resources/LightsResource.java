@@ -4,9 +4,7 @@ import com.nina.zigbeerestapi.core.Light;
 import com.nina.zigbeerestapi.core.Lights;
 import com.nina.zigbeerestapi.serialcomm.SerialCommunication;
 import com.codahale.metrics.annotation.Timed;
-
 import com.google.common.base.Optional;
-
 import java.util.ArrayList;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
@@ -23,7 +21,7 @@ public class LightsResource {
 
     private final SerialCommunication serialComm;
 	private final Lights lights;
-	private final static Integer DEFAULT_TRANSITION_TIME = new Integer(20);
+	private final static Integer DEFAULT_TRANSITION_TIME = new Integer(1);
 	private final static Integer MAX_BRIGHTNESS = new Integer(254);
 	private final static int READ_ATTR_DELAY_MS = 100;
 	private final static int WAIT_ATTR_TIMEOUT_MS = 5000;
@@ -42,7 +40,29 @@ public class LightsResource {
 	@GET
 	@Path("{id}")
 	public Light getLight(@PathParam("id") long id) {
-		return lights.getLight(id);
+		Light light = lights.getLight(id);
+		
+		long prevStackVersionLastUpdated = light.getStackVersionLastUpdated();
+		
+		serialComm.writeCommand("readBasicAttr -s " + light.getShortNwkAddress() 
+				+ " " + light.getEndpointId() + " 0x0002");
+
+		long timeout = System.currentTimeMillis() + WAIT_ATTR_TIMEOUT_MS;
+		while(light.getStackVersionLastUpdated() <= prevStackVersionLastUpdated) {
+			if (System.currentTimeMillis() >= timeout) break;
+		}
+
+		long prevModelIdLastUpdated = light.getModelIdLastUpdated();
+		
+		serialComm.writeCommand("readBasicAttr -s " + light.getShortNwkAddress() 
+				+ " " + light.getEndpointId() + " 0x0005");
+
+		timeout = System.currentTimeMillis() + WAIT_ATTR_TIMEOUT_MS;
+		while(light.getModelIdLastUpdated() <= prevModelIdLastUpdated) {
+			if (System.currentTimeMillis() >= timeout) break;
+		}
+
+		return light;
 	}
 
 	@PUT
@@ -66,23 +86,17 @@ public class LightsResource {
 
 		if(name.isPresent()) {
 			light.setName(name.get());
-			System.out.println("Name is now " + name.get());
 		}
 
 		if(on.isPresent()) {
-
 			long prevOnLastUpdated = light.getOnLastUpdated();
 
 		    String value = "-off";
 			if (on.get()) {
 				value = "-on";
 			}
-
-			System.out.println("onOff -s " + light.getShortNwkAddress() + " " + light.getEndpointId() + " " + value);
-			serialComm.writeCommand("onOff -s " 
-				+ light.getShortNwkAddress() + " " 
-				+ light.getEndpointId() + " " 
-				+ value);
+			serialComm.writeCommand("onOff -s " + light.getShortNwkAddress() 
+				+ " " + light.getEndpointId() + " " + value);
 
 			try {
 			   	Thread.sleep(READ_ATTR_DELAY_MS);
@@ -91,8 +105,9 @@ public class LightsResource {
 				e.printStackTrace();
 			}
 
-			System.out.println("readOnOffAttr -s " + light.getShortNwkAddress() + " " + light.getEndpointId() + " 0x00");
-			serialComm.writeCommand("readOnOffAttr -s " + light.getShortNwkAddress() + " " + light.getEndpointId() + " 0x00");
+			serialComm.writeCommand("readOnOffAttr -s " 
+				+ light.getShortNwkAddress() + " " + light.getEndpointId() 
+				+ " 0x00");
 			
 			long timeout = System.currentTimeMillis() + WAIT_ATTR_TIMEOUT_MS;
 			while(light.getOnLastUpdated() <= prevOnLastUpdated) {
@@ -101,12 +116,31 @@ public class LightsResource {
 		}
 
 		if(brightness.isPresent()) {
+			long prevBrightnessLastUpdated = light.getBrightnessLastUpdated();
+
 			Integer value = brightness.get();
 			if (value.compareTo(MAX_BRIGHTNESS) > 0) {
 				value = MAX_BRIGHTNESS;
 			}
-			serialComm.writeCommand("moveToLevel -s " + light.getShortNwkAddress() + " " 
-				+ light.getEndpointId() + " " + value + " " + transitionTimeInt + " " + 1);
+			serialComm.writeCommand("moveToLevel -s " 
+				+ light.getShortNwkAddress() + " " + light.getEndpointId() 
+				+ " " + value + " " + transitionTimeInt + " " + 1);
+
+			try {
+			   	Thread.sleep(READ_ATTR_DELAY_MS);
+			}
+			catch ( InterruptedException e ) {
+				e.printStackTrace();
+			}
+
+			serialComm.writeCommand("readLevelAttr -s " 
+				+ light.getShortNwkAddress() + " " + light.getEndpointId() 
+				+ " 0x00");
+			
+			long timeout = System.currentTimeMillis() + WAIT_ATTR_TIMEOUT_MS;
+			while(light.getBrightnessLastUpdated() <= prevBrightnessLastUpdated) {
+				if (System.currentTimeMillis() >= timeout) break;
+			}
 
 		}
 
