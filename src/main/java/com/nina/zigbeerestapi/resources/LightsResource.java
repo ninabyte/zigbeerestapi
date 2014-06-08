@@ -12,7 +12,6 @@ import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
 import javax.ws.rs.core.MediaType;
 
 @Path("/lights")
@@ -38,9 +37,10 @@ public class LightsResource {
 	}
 
 	@GET
+	@Timed
 	@Path("{id}")
 	public Light getLight(@PathParam("id") long id) {
-		Light light = lights.getLight(id);
+		Light light = lights.getLightById(id);
 		
 		long prevStackVersionLastUpdated = light.getStackVersionLastUpdated();
 		
@@ -66,6 +66,7 @@ public class LightsResource {
 	}
 
 	@PUT
+	@Timed
 	@Path("{id}")
 	public Light setState(@PathParam("id") long id, 
 			@QueryParam("name") Optional<String> name, 
@@ -73,7 +74,8 @@ public class LightsResource {
 			@QueryParam("brightness") Optional<Integer> brightness,
 			@QueryParam("transitiontime") Optional<Integer> transitionTime) {
 
-		Light light = lights.getLight(id);
+		Light light = lights.getLightById(id);
+		//kalo light null, return error here
 
 		Integer transitionTimeInt;
 

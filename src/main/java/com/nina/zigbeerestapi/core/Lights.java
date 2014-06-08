@@ -20,18 +20,16 @@ public class Lights {
 		for (Light light : lights){
 			arrayId.add("" + light.getId());
 		}
-
 		return arrayId;
 	}
 
 	@JsonProperty
-	public Light getLight(long id) {
+	public Light getLightById(long id) {
 		for (Light light: lights){
 			if (light.getId() == id) {
 				return light;
 			}
 		}
-
 		return null;
 	}
 
@@ -42,7 +40,6 @@ public class Lights {
 				return light;
 			}
 		}
-
 		return null;
 	}
 

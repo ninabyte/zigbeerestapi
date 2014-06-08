@@ -4,6 +4,7 @@ import io.dropwizard.Application;
 import io.dropwizard.setup.Bootstrap;
 import io.dropwizard.setup.Environment;
 import com.nina.zigbeerestapi.core.Lights;
+import com.nina.zigbeerestapi.core.Groups;
 import com.nina.zigbeerestapi.serialcomm.SerialCommunication;
 import com.nina.zigbeerestapi.resources.*;
 import com.nina.zigbeerestapi.health.TemplateHealthCheck;
@@ -28,6 +29,7 @@ public class App extends Application<AppConfiguration> {
                     Environment environment) {
 
         final Lights lights = new Lights();
+        final Groups groups = new Groups();
 
         final SerialCommunication serialComm = new SerialCommunication("COM15", lights);
         serialComm.init();
@@ -40,6 +42,10 @@ public class App extends Application<AppConfiguration> {
         final LightsResource resource3 = new LightsResource(
             serialComm, lights);
         environment.jersey().register(resource3);
+
+        final GroupsResource resource4 = new GroupsResource(
+            serialComm, groups, lights);
+        environment.jersey().register(resource4);
 
         final TemplateHealthCheck healthCheck =
                 new TemplateHealthCheck(configuration.getTemplate());

@@ -1,13 +1,11 @@
 package com.nina.zigbeerestapi.core;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.ArrayList;
 
 public class Group {
 	@JsonProperty
 	private long id;
-	
-	@JsonProperty
-	private String groupAddress;
 	
 	@JsonProperty
 	private String name;
@@ -18,17 +16,21 @@ public class Group {
 	@JsonProperty
     private long onLastUpdated = 0L;
 
-	public Group(long id) {
-		this(id, "Group " + id);
-	}
+    @JsonProperty
+    private ArrayList<Long> lights;
 
 	public Group(long id, String name) {
 		this.id = id;
 		this.name = name;
+		lights = new ArrayList<Long>();
 	}
 
 	public long getId() {
 		return id;
+	}
+
+	public String getGroupAddress() {
+		return ""+id;
 	}
 
 	public String getName() {
@@ -37,6 +39,16 @@ public class Group {
 
 	public void setName(String name) {
 		this.name = name;
+	}
+
+	public void addLight(Long lightId) {
+		if (!lights.contains(lightId)) {
+			lights.add(lightId);
+		}
+	}
+
+	public boolean removeLight(String lightId) {
+		return lights.remove(lightId);
 	}
 
 }
