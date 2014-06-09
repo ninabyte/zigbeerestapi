@@ -2,6 +2,8 @@ package com.nina.zigbeerestapi.serialcomm;
 
 import com.nina.zigbeerestapi.core.Light;
 import com.nina.zigbeerestapi.core.Lights;
+import com.nina.zigbeerestapi.core.Group;
+import com.nina.zigbeerestapi.core.Groups;
 
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;	
@@ -22,10 +24,12 @@ public class SerialCommunication{
 	private InputStream inStream;
 	private byte[] readBuffer = new byte[400];
 	private Lights lights;
+	private Groups groups;
 
-	public SerialCommunication (String portName, Lights lights){
+	public SerialCommunication (String portName, Lights lights, Groups groups){
 		this.portName = portName;
 		this.lights = lights;
+		this.groups = groups;
 	}
 
 	public void init (){
@@ -120,14 +124,15 @@ public class SerialCommunication{
 				String endpointId = rep[2];
 				String value = rep[3];
 
-				Light light = lights.getLightByAddress(shortNwkAddr);
+				Light light = lights.getLightByAddressAndEndpoint(
+						shortNwkAddr, endpointId);
 				if (light == null) {
 					light = lights.createLight();
 					light.setEndpointId(endpointId);
 					light.setShortNwkAddress(shortNwkAddr);
 				}
 
-				if(type.equals("onOff")){
+			if(type.equals("onOff")){
 					light.setOn(Integer.parseInt(value) > 0);
 				}
 				else if(type.equals("levelControl")){
@@ -138,6 +143,22 @@ public class SerialCommunication{
 				}
 				else if (type.equals("stackVersion")) {
 					light.setStackVersion(value.equals("0")?"not specified":value);
+				}
+			}
+			else if (type.equals("groupAdded") || type.equals("groupRemoved")) {
+				String lightAddr = rep[1];
+				String lightEndpointId = rep[2];
+				String groupId = rep[3];
+
+				Group group = groups.getGroupById(Long.parseLong(groupId));
+				Light light = lights.getLightByAddressAndEndpoint(
+						lightAddr, lightEndpointId);
+
+				if(type.equals("groupAdded")) {
+					group.addLight(light.getId());
+				}
+				else if(type.equals("groupRemoved")) {
+					group.removeLight(light.getId());
 				}
 			}
 		}

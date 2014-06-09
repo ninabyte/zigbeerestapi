@@ -1,40 +1,31 @@
 package com.nina.zigbeerestapi.core;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import javax.validation.constraints.Min;
-import javax.validation.constraints.Max;
+
 public class Light{
 
     @JsonProperty
 	private long id;
+    @JsonProperty
+    private String name;
 	@JsonIgnore
     private String shortNwkAddress;
-    @JsonProperty
+    @JsonIgnore
     private String endpointId;
-    @JsonProperty
-	private String name;
-    @JsonProperty
-	private boolean on;
     @JsonProperty
     private String stackVersion = "not specified";
     @JsonProperty
     private String modelId = "not specified";
     @JsonIgnore
-    private long onLastUpdated = 0L;
-    @JsonIgnore
-    private long brightnessLastUpdated = 0L;
-    @JsonIgnore
     private long stackVersionLastUpdated = 0L;
     @JsonIgnore
     private long modelIdLastUpdated = 0L;
-	
-    @Min(0)
-	@Max(255)
     @JsonProperty
-	private int brightness;
+    private State state;
 	
     public Light(long id) {
 		this.id = id;
+        state = new State();
 	}
 	public long getId() {
         return id;
@@ -52,8 +43,9 @@ public class Light{
     	return name;
     }
     
+    @JsonIgnore
     public boolean isOn() {
-    	return on;
+    	return state.isOn();
     }
     
     public String getStackVersion() {
@@ -64,16 +56,19 @@ public class Light{
         return modelId;
     }
     
+    @JsonIgnore
     public int getBrightness() {
-    	return brightness;
+    	return state.getBrightness();
     }
     
+    @JsonIgnore
     public long getOnLastUpdated() {
-        return onLastUpdated;
+        return state.getOnLastUpdated();
     }
     
+    @JsonIgnore
     public long getBrightnessLastUpdated() {
-        return brightnessLastUpdated;
+        return state.getBrightnessLastUpdated();
     }
     
     public long getModelIdLastUpdated() {
@@ -96,9 +91,14 @@ public class Light{
     	this.name = name;
     }
 
+    @JsonIgnore
     public void setOn(boolean on) {
-    	this.on = on;
-        onLastUpdated = System.currentTimeMillis();
+    	state.setOn(on);
+    }
+
+    @JsonIgnore
+    public void setBrightness(int brightness) {
+        state.setBrightness(brightness);
     }
     
     public void setStackVersion(String stackVersion) {
@@ -111,8 +111,4 @@ public class Light{
         modelIdLastUpdated = System.currentTimeMillis();
     }
     
-    public void setBrightness(int brightness) {
-    	this.brightness = brightness;
-        brightnessLastUpdated = System.currentTimeMillis(); 
-    }
 }

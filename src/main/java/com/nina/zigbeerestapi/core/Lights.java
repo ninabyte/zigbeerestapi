@@ -1,12 +1,13 @@
 package com.nina.zigbeerestapi.core;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import java.util.List;
 import java.util.ArrayList;
 import java.util.concurrent.atomic.AtomicLong;
 
 public class Lights {
 	
-	private ArrayList<Light> lights;
+	private List<Light> lights;
 	private final AtomicLong counter;
 
 	public Lights() {
@@ -15,8 +16,8 @@ public class Lights {
 	}
 
 	@JsonProperty
-	public ArrayList<String> getAllLights() {
-		ArrayList<String> arrayId = new ArrayList<String>();
+	public List<String> getAllLights() {
+		List<String> arrayId = new ArrayList<String>();
 		for (Light light : lights){
 			arrayId.add("" + light.getId());
 		}
@@ -34,9 +35,10 @@ public class Lights {
 	}
 
 	@JsonProperty
-	public Light getLightByAddress(String addr) {
+	public Light getLightByAddressAndEndpoint(String addr, String endpoint) {
 		for (Light light: lights){
-			if (light.getShortNwkAddress().equals(addr)) {
+			if (light.getShortNwkAddress().equals(addr) 
+					&& light.getEndpointId().equals(endpoint)) {
 				return light;
 			}
 		}
@@ -59,15 +61,4 @@ public class Lights {
 		lights.add(newLight);
 		return newLight;
 	}
-	
-	/*
-	private class LightIdentifier {
-		@JsonProperty
-		long id;
-
-		@JsonProperty
-		String name;
-	}
-	*/
-	
 }

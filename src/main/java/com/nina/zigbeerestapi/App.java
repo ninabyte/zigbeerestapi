@@ -31,7 +31,8 @@ public class App extends Application<AppConfiguration> {
         final Lights lights = new Lights();
         final Groups groups = new Groups();
 
-        final SerialCommunication serialComm = new SerialCommunication("COM15", lights);
+        final SerialCommunication serialComm = new SerialCommunication(
+                "COM15", lights, groups);
         serialComm.init();
         serialComm.startReading();
 

@@ -2,15 +2,18 @@ package com.nina.zigbeerestapi.resources;
 
 import com.nina.zigbeerestapi.core.Light;
 import com.nina.zigbeerestapi.core.Lights;
+import com.nina.zigbeerestapi.core.Config;
+import com.nina.zigbeerestapi.core.Constants;
 import com.nina.zigbeerestapi.serialcomm.SerialCommunication;
 import com.codahale.metrics.annotation.Timed;
 import com.google.common.base.Optional;
-import java.util.ArrayList;
+import java.util.List;
 import javax.ws.rs.GET;
 import javax.ws.rs.PUT;
 import javax.ws.rs.Path;
 import javax.ws.rs.PathParam;
 import javax.ws.rs.QueryParam;
+import javax.ws.rs.WebApplicationException;
 import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
@@ -20,10 +23,6 @@ public class LightsResource {
 
     private final SerialCommunication serialComm;
 	private final Lights lights;
-	private final static Integer DEFAULT_TRANSITION_TIME = new Integer(1);
-	private final static Integer MAX_BRIGHTNESS = new Integer(254);
-	private final static int READ_ATTR_DELAY_MS = 100;
-	private final static int WAIT_ATTR_TIMEOUT_MS = 5000;
 
 	public LightsResource(SerialCommunication serialComm, Lights lights) {
 		this.serialComm = serialComm;
@@ -32,7 +31,7 @@ public class LightsResource {
 
 	@GET
 	@Timed
-	public ArrayList<String> getAllLights() {
+	public List<String> getAllLights() {
 		return lights.getAllLights();
 	}
 
@@ -41,13 +40,17 @@ public class LightsResource {
 	@Path("{id}")
 	public Light getLight(@PathParam("id") long id) {
 		Light light = lights.getLightById(id);
-		
+		if (light == null) {
+			throw new WebApplicationException(404);
+		}
+
 		long prevStackVersionLastUpdated = light.getStackVersionLastUpdated();
 		
 		serialComm.writeCommand("readBasicAttr -s " + light.getShortNwkAddress() 
-				+ " " + light.getEndpointId() + " 0x0002");
+				+ " " + light.getEndpointId() + " " 
+				+ Constants.BASIC_CLUSTER_STACK_VERSION_ATTRIB_ID);
 
-		long timeout = System.currentTimeMillis() + WAIT_ATTR_TIMEOUT_MS;
+		long timeout = System.currentTimeMillis() + Config.WAIT_ATTR_TIMEOUT_MS;
 		while(light.getStackVersionLastUpdated() <= prevStackVersionLastUpdated) {
 			if (System.currentTimeMillis() >= timeout) break;
 		}
@@ -55,9 +58,10 @@ public class LightsResource {
 		long prevModelIdLastUpdated = light.getModelIdLastUpdated();
 		
 		serialComm.writeCommand("readBasicAttr -s " + light.getShortNwkAddress() 
-				+ " " + light.getEndpointId() + " 0x0005");
+				+ " " + light.getEndpointId() + " " 
+				+ Constants.BASIC_CLUSTER_MODEL_ID_ATTRIB_ID);
 
-		timeout = System.currentTimeMillis() + WAIT_ATTR_TIMEOUT_MS;
+		timeout = System.currentTimeMillis() + Config.WAIT_ATTR_TIMEOUT_MS;
 		while(light.getModelIdLastUpdated() <= prevModelIdLastUpdated) {
 			if (System.currentTimeMillis() >= timeout) break;
 		}
@@ -68,26 +72,37 @@ public class LightsResource {
 	@PUT
 	@Timed
 	@Path("{id}")
-	public Light setState(@PathParam("id") long id, 
-			@QueryParam("name") Optional<String> name, 
+	public Light editLight(@PathParam("id") long id, 
+			@QueryParam("name") Optional<String> name) {
+
+		Light light = lights.getLightById(id);
+		if (light == null) {
+			throw new WebApplicationException(404);
+		}
+
+		if(name.isPresent()) {
+			light.setName(name.get());
+		}
+
+		return light;
+	}
+
+	@PUT
+	@Timed
+	@Path("state/{id}")
+	public Light setState (@PathParam("id") long id, 
 			@QueryParam("on") Optional<Boolean> on, 
 			@QueryParam("brightness") Optional<Integer> brightness,
 			@QueryParam("transitiontime") Optional<Integer> transitionTime) {
 
 		Light light = lights.getLightById(id);
-		//kalo light null, return error here
-
-		Integer transitionTimeInt;
-
-		if(!transitionTime.isPresent()) {
-			transitionTimeInt = DEFAULT_TRANSITION_TIME;
+		if (light == null) {
+			throw new WebApplicationException(404);
 		}
-		else {
+
+		Integer transitionTimeInt = Config.DEFAULT_TRANSITION_TIME;
+		if(transitionTime.isPresent()) {
 			transitionTimeInt = transitionTime.get();
-		}
-
-		if(name.isPresent()) {
-			light.setName(name.get());
 		}
 
 		if(on.isPresent()) {
@@ -101,7 +116,7 @@ public class LightsResource {
 				+ " " + light.getEndpointId() + " " + value);
 
 			try {
-			   	Thread.sleep(READ_ATTR_DELAY_MS);
+			   	Thread.sleep(Config.READ_ATTR_DELAY_MS);
 			}
 			catch ( InterruptedException e ) {
 				e.printStackTrace();
@@ -109,9 +124,9 @@ public class LightsResource {
 
 			serialComm.writeCommand("readOnOffAttr -s " 
 				+ light.getShortNwkAddress() + " " + light.getEndpointId() 
-				+ " 0x00");
+				+ " " + Constants.ONOFF_CLUSTER_ONOFF_ATTRIB_ID);
 			
-			long timeout = System.currentTimeMillis() + WAIT_ATTR_TIMEOUT_MS;
+			long timeout = System.currentTimeMillis() + Config.WAIT_ATTR_TIMEOUT_MS;
 			while(light.getOnLastUpdated() <= prevOnLastUpdated) {
 				if (System.currentTimeMillis() >= timeout) break;
 			}
@@ -121,15 +136,15 @@ public class LightsResource {
 			long prevBrightnessLastUpdated = light.getBrightnessLastUpdated();
 
 			Integer value = brightness.get();
-			if (value.compareTo(MAX_BRIGHTNESS) > 0) {
-				value = MAX_BRIGHTNESS;
+			if (value.compareTo(Constants.MAX_BRIGHTNESS) > 0) {
+				value = Constants.MAX_BRIGHTNESS;
 			}
 			serialComm.writeCommand("moveToLevel -s " 
 				+ light.getShortNwkAddress() + " " + light.getEndpointId() 
 				+ " " + value + " " + transitionTimeInt + " " + 1);
 
 			try {
-			   	Thread.sleep(READ_ATTR_DELAY_MS);
+			   	Thread.sleep(Config.READ_ATTR_DELAY_MS);
 			}
 			catch ( InterruptedException e ) {
 				e.printStackTrace();
@@ -137,9 +152,9 @@ public class LightsResource {
 
 			serialComm.writeCommand("readLevelAttr -s " 
 				+ light.getShortNwkAddress() + " " + light.getEndpointId() 
-				+ " 0x00");
+				+ " " + Constants.LEVEL_CLUSTER_LEVEL_ATTRIB_ID);
 			
-			long timeout = System.currentTimeMillis() + WAIT_ATTR_TIMEOUT_MS;
+			long timeout = System.currentTimeMillis() + Config.WAIT_ATTR_TIMEOUT_MS;
 			while(light.getBrightnessLastUpdated() <= prevBrightnessLastUpdated) {
 				if (System.currentTimeMillis() >= timeout) break;
 			}
@@ -147,7 +162,6 @@ public class LightsResource {
 		}
 
 		return light;
-
-	}
+	}	
 
 }

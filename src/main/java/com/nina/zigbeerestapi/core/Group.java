@@ -1,6 +1,8 @@
 package com.nina.zigbeerestapi.core;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import java.util.List;
 import java.util.ArrayList;
 
 public class Group {
@@ -9,20 +11,21 @@ public class Group {
 	
 	@JsonProperty
 	private String name;
-	
-	@JsonProperty
-	private boolean on;
-    
-	@JsonProperty
-    private long onLastUpdated = 0L;
 
     @JsonProperty
-    private ArrayList<Long> lights;
+    private List<Long> lights;
+
+    @JsonIgnore
+    private long lightsLastUpdated;
+
+    @JsonProperty
+	private State latestState;
 
 	public Group(long id, String name) {
 		this.id = id;
 		this.name = name;
 		lights = new ArrayList<Long>();
+		latestState = new State();
 	}
 
 	public long getId() {
@@ -41,14 +44,55 @@ public class Group {
 		this.name = name;
 	}
 
+	public List<Long> getLights() {
+		return lights;
+	}
+
 	public void addLight(Long lightId) {
 		if (!lights.contains(lightId)) {
 			lights.add(lightId);
 		}
+		lightsLastUpdated = System.currentTimeMillis();
 	}
 
-	public boolean removeLight(String lightId) {
-		return lights.remove(lightId);
+	public boolean removeLight(long lightId) {
+		boolean status = lights.remove(lightId);
+		lightsLastUpdated = System.currentTimeMillis();
+		return status;
 	}
 
+	public long getLightsLastUpdated() {
+		return lightsLastUpdated;
+	}
+
+	@JsonIgnore
+    public boolean isOn() {
+    	return latestState.isOn();
+    }
+    
+    @JsonIgnore
+    public int getBrightness() {
+    	return latestState.getBrightness();
+    }
+    
+    @JsonIgnore
+    public long getLatestStateOnLastUpdated() {
+        return latestState.getOnLastUpdated();
+    }
+    
+    @JsonIgnore
+    public long getLatestStateBrightnessLastUpdated() {
+        return latestState.getBrightnessLastUpdated();
+    }
+
+    @JsonIgnore
+    public void setLatestStateOn(boolean on) {
+    	latestState.setOn(on);
+    }
+
+    @JsonIgnore
+    public void setLatestStateBrightness(int brightness) {
+        latestState.setBrightness(brightness);
+    }
+    	
 }
