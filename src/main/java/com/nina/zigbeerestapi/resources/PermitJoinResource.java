@@ -18,19 +18,10 @@ import java.util.concurrent.atomic.AtomicLong;
 public class PermitJoinResource {
     private final SerialCommunication serialComm;
     private final boolean status;
-    private final AtomicLong counter;
 
     public PermitJoinResource(SerialCommunication serialComm, boolean status) {
         this.serialComm = serialComm;
         this.status = status;
-        this.counter = new AtomicLong();
-    }
-
-    @GET
-    @Timed
-    public PermitJoinStatus getPermitJoinStatus() {
-        //panggil status here, return
-        return new PermitJoinStatus(counter.incrementAndGet(), status);
     }
 
     @PUT
