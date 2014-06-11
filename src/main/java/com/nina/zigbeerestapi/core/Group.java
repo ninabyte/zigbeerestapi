@@ -21,11 +21,15 @@ public class Group {
     @JsonProperty
 	private State latestState;
 
+	@JsonIgnore
+	private Scenes scenes;
+
 	public Group(long id, String name) {
 		this.id = id;
 		this.name = name;
 		lights = new ArrayList<Long>();
 		latestState = new State();
+		scenes = new Scenes();
 	}
 
 	public long getId() {
@@ -93,6 +97,16 @@ public class Group {
     @JsonIgnore
     public void setLatestStateBrightness(int brightness) {
         latestState.setBrightness(brightness);
+    }
+
+    @JsonIgnore
+    public Scenes getScenes() {
+    	return scenes;
+    }
+
+    @JsonProperty
+    public List<String> getSceneIds() {
+    	return scenes.getAllScenes();
     }
     	
 }

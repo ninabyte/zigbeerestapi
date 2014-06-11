@@ -27,6 +27,7 @@ public class Light{
 		this.id = id;
         state = new State();
 	}
+    
 	public long getId() {
         return id;
     }

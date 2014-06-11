@@ -89,7 +89,7 @@ public class LightsResource {
 
 	@PUT
 	@Timed
-	@Path("state/{id}")
+	@Path("{id}/state")
 	public Light setState (@PathParam("id") long id, 
 			@QueryParam("on") Optional<Boolean> on, 
 			@QueryParam("brightness") Optional<Integer> brightness,
@@ -112,6 +112,9 @@ public class LightsResource {
 			if (on.get()) {
 				value = "-on";
 			}
+			
+			System.out.println("onOff -s " + light.getShortNwkAddress() 
+				+ " " + light.getEndpointId() + " " + value);
 			serialComm.writeCommand("onOff -s " + light.getShortNwkAddress() 
 				+ " " + light.getEndpointId() + " " + value);
 

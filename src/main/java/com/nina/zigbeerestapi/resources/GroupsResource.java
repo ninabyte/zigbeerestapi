@@ -200,7 +200,9 @@ public class GroupsResource {
 		}
 
 		List<Long> lightIds = group.getLights();
-		for(long lightId: lightIds) {
+		int lightAmt = lightIds.size();
+		for(int i=0; i<lightAmt; i++) {
+			long lightId = lightIds.get(i);
 			removeLightFromGroup(group, lightId);
 		}
 

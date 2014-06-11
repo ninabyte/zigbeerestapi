@@ -2,8 +2,11 @@ package com.nina.zigbeerestapi.serialcomm;
 
 import com.nina.zigbeerestapi.core.Light;
 import com.nina.zigbeerestapi.core.Lights;
+import com.nina.zigbeerestapi.core.State;
 import com.nina.zigbeerestapi.core.Group;
 import com.nina.zigbeerestapi.core.Groups;
+import com.nina.zigbeerestapi.core.Scene;
+import com.nina.zigbeerestapi.core.Scenes;
 
 import gnu.io.CommPortIdentifier;
 import gnu.io.SerialPort;	
@@ -81,7 +84,6 @@ public class SerialCommunication{
 	 			
 	 			for(int i=0; i<availableBytes; i++) {
 	 				byte character = readBuffer[i];
-	 				//System.out.print((char)(character & 0xFF));
 	 				if(waitLF) {
 	 					if(character == '\n') {
 		 					parseReport(report.toString());
@@ -132,7 +134,7 @@ public class SerialCommunication{
 					light.setShortNwkAddress(shortNwkAddr);
 				}
 
-			if(type.equals("onOff")){
+				if(type.equals("onOff")){
 					light.setOn(Integer.parseInt(value) > 0);
 				}
 				else if(type.equals("levelControl")){
@@ -145,7 +147,8 @@ public class SerialCommunication{
 					light.setStackVersion(value.equals("0")?"not specified":value);
 				}
 			}
-			else if (type.equals("groupAdded") || type.equals("groupRemoved")) {
+			else if (type.equals("groupAdded") || type.equals("groupRemoved")
+					|| type.equals("sceneStored") || type.equals("sceneRemoved")) {
 				String lightAddr = rep[1];
 				String lightEndpointId = rep[2];
 				String groupId = rep[3];
@@ -159,6 +162,27 @@ public class SerialCommunication{
 				}
 				else if(type.equals("groupRemoved")) {
 					group.removeLight(light.getId());
+				}
+				else if(type.equals("sceneStored")) {
+					String sceneId = rep[4];
+					long sceneIdLong = Long.parseLong(sceneId);
+
+					Scenes scenes = group.getScenes();
+					Scene scene = scenes.getSceneById(sceneIdLong);
+					
+					State copyState = new State();
+					copyState.setOn(light.isOn());
+					copyState.setBrightness(light.getBrightness());
+					scene.addSavedState(light.getId(), copyState);
+					
+					
+				}
+				else if(type.equals("sceneRemoved")) {
+					String sceneId = rep[4];
+					long sceneIdLong = Long.parseLong(sceneId);
+
+					Scenes scenes = group.getScenes();
+					scenes.remove(sceneIdLong);
 				}
 			}
 		}

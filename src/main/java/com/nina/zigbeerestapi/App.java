@@ -48,6 +48,10 @@ public class App extends Application<AppConfiguration> {
             serialComm, groups, lights);
         environment.jersey().register(resource4);
 
+        final ScenesResource resource5 = new ScenesResource(
+            serialComm, groups, lights);
+        environment.jersey().register(resource5);
+
         final TemplateHealthCheck healthCheck =
                 new TemplateHealthCheck(configuration.getTemplate());
         environment.healthChecks().register("template", healthCheck);
